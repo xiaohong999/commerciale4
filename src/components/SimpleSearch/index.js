@@ -5,7 +5,7 @@ import "react-rangeslider/lib/index.css";
 import ReactTags from "react-tag-autocomplete";
 import { Container, Row, Col } from "react-bootstrap";
 
-import "./SimpleSearch.css";
+import "./index.css";
 import {
 	ATECO_CODES,
 	N_EMPOYEES,
@@ -15,7 +15,7 @@ import {
 	citiesInRegion,
 	maxsFromMin,
 	minsFromMax
-} from "../utils/Utils";
+} from "../../utils";
 
 export default class SimpleSearch extends Component {
 	state = {
