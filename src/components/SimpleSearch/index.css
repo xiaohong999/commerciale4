@@ -1,0 +1,14 @@
+.landing .search-form {
+	background: white;
+	margin-top: 88px;
+	margin-bottom: 24px;
+	border-radius: 10px;
+	padding: 16px;
+	max-width: 720px;
+}
+
+@media (max-width: 576px) {
+	.landing .search-form {
+		width: calc(100% - 24px);
+	}
+}
