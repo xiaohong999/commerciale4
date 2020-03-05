@@ -5,13 +5,13 @@ import "./App.css";
 
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 
-import LoginPage from "./pages/LoginPage";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import LandingPage from "./pages/LandingPage";
-import RegisterPage from "./pages/RegisterPage";
-import TermsAndConditions from "./pages/TermsPage";
-import PrivacyPolicy from "./pages/PolicyPage";
+import LoginPage from "./pages/LoginPage/index";
+import Header from "./components/Header/index";
+import Footer from "./components/Footer/index";
+import LandingPage from "./pages/LandingPage/index";
+import RegisterPage from "./pages/RegisterPage/index";
+import TermsAndConditions from "./pages/TermsPage/index";
+import PrivacyPolicy from "./pages/PolicyPage/index";
 
 function App() {
 	let footerNeeded = false;

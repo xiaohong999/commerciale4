@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "./index.css";
-import RegisterForm from "../../components/RegisterForm";
+import RegisterForm from "../../components/RegisterForm/index";
 
 export default class RegisterPage extends Component {
 	render() {

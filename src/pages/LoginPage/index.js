@@ -1,13 +1,13 @@
 import React, { Component } from "react";
-import LoginForm from "../../components/LoginForm";
+import LoginForm from "../../components/LoginForm/index";
 import "./index.css";
 
 export default class LoginPage extends Component {
-  render() {
-    return (
-      <div className="login-page">
-        <LoginForm />
-      </div>
-    );
-  }
+	render() {
+		return (
+			<div className="login-page">
+				<LoginForm />
+			</div>
+		);
+	}
 }
