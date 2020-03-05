@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import LoginForm from "../../components/LoginForm/index";
-import "./index.css";
+import "./LoginPage.css";
 
 export default class LoginPage extends Component {
 	render() {

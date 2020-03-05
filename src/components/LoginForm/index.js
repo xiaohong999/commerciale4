@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import "./index.css";
+import "./LoginForm.css";
 export default class LoginForm extends Component {
 	state = {
 		remember: false
