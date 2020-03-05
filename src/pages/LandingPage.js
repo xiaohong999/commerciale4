@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import "./index.css";
-import SimpleSearch from "../../components/SimpleSearch/index";
+import "./LandingPage.css";
+import SimpleSearch from "../components/SimpleSearch";
 
 export default class LandingPage extends Component {
 	render() {
