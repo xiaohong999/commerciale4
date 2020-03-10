@@ -4,7 +4,7 @@ const { Utils } = require("../utils");
 const faunadb = require("faunadb"),
 	q = faunadb.query;
 const client = new faunadb.Client({
-	secret: Utils.FAUNADB_SECRET
+	secret: "fnADmaxpUnACAb1E0e9CbnSbBu-PJ8h0ZI6vEYQz"
 });
 
 const crypto = require("crypto");
@@ -161,7 +161,7 @@ router.post("/register", async (req, res) => {
 		.catch(err => {
 			res.send({
 				status: 0,
-				message: "An error occured while create your account!"
+				message: Utils.FAUNADB_SECRET
 			});
 		});
 });
