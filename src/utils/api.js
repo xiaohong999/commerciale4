@@ -7,6 +7,9 @@ export const requestAPI = async (path, method, data) => {
 		body: JSON.stringify(data)
 	}).then(res => {
 		console.log(res);
-		return res.json();
+		if (res.status === 200) {
+			return res.json();
+		}
+		return { status: 0, message: "Connection Failed!" };
 	});
 };
