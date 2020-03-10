@@ -4,7 +4,7 @@ const { Utils } = require("../utils");
 const faunadb = require("faunadb"),
 	q = faunadb.query;
 const client = new faunadb.Client({
-	secret: "fnADmaxpUnACAb1E0e9CbnSbBu-PJ8h0ZI6vEYQz"
+	secret: Utils.FAUNADB_SECRET
 });
 
 const crypto = require("crypto");
