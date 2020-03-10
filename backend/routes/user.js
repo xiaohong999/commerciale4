@@ -1,26 +1,74 @@
 const router = require("express").Router();
 const nodemailer = require("nodemailer");
+const { Utils } = require("../utils");
 const faunadb = require("faunadb"),
 	q = faunadb.query;
 const client = new faunadb.Client({
-	secret: "fnADmaxpUnACAb1E0e9CbnSbBu-PJ8h0ZI6vEYQz"
+	secret: Utils.FAUNADB_SECRET
 });
 
-function sendMailer(toEmail, url, verifyCode) {
+const crypto = require("crypto");
+const algorithm = "aes-256-cbc";
+const key = crypto.randomBytes(32);
+const iv = crypto.randomBytes(16);
+function encrypt(text) {
+	console.log(text);
+	let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
+	let encrypted = cipher.update(text);
+	encrypted = Buffer.concat([encrypted, cipher.final()]);
+	return { iv: iv.toString("hex"), encryptedData: encrypted.toString("hex") };
+}
+function decrypt(text) {
+	console.log("sgs", text.iv);
+	let iv = Buffer.from(text.iv, "hex");
+	console.log(iv);
+	let encryptedText = Buffer.from(text.encryptedData, "hex");
+	console.log(encryptedText);
+	let decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
+	console.log(decipher);
+	let decrypted = decipher.update(encryptedText);
+	decrypted = JSON.parse(decrypt);
+	console.log(decrypted);
+	decrypted = Buffer.concat([decrypted, decipher.final()]);
+	console.log(decrypted);
+	return decrypted.toString();
+}
+router.get("/encrypt", (req, res) => {
+	console.log(req.query.code);
+	console.log(encrypt(req.query.code));
+	res.send(encrypt(req.query.code));
+});
+router.post("/decrypt", (req, res) => {
+	console.log(JSON.parse(req.body));
+	console.log(decrypt(JSON.parse(req.body)));
+	res.send(decrypt(JSON.parse(req.body)));
+});
+
+function sendMailer(toEmail, type, value) {
+	let toHtml = "";
+	let toSubject = "";
+	if (type === Utils.EMAIL_VERIFY) {
+		toSubject = Utils.VERIFY_EMAIL_SUBJECT; // verify code
+		toHtml = `${Utils.VERIFY_EMAIL_MESSAGE}
+          <br/><a href="${Utils.SERVER_URL}${Utils.NETLIFY_FUNCTIONS_URL}/user/verify?code=${value}"></a>`;
+	} else {
+		toSubject = Utils.RESET_PASSWORD_SUBJECT;
+		toHtml = `${Utils.RESET_PASSWORD_MESSAGE}
+          <br/><a href="${Utils.SERVER_URL}/reset-password?id=${value}"></a>`;
+	}
+
 	const transporter = nodemailer.createTransport({
 		service: "gmail",
 		auth: {
-			user: "yangtingclever@gmail.com",
-			pass: "dkrsusuvkrdhdksu529"
+			user: Utils.NODEMAILER_ACCOUNT,
+			pass: Utils.NODEMAILER_PASSWORD
 		}
 	});
 	const mailOption = {
-		from: "yangtingclever@gmail.com",
+		from: Utils.NODEMAILER_ACCOUNT,
 		to: toEmail,
-		subject: "Account Verification",
-		html: `<h1>Hello Friend Please Click on this link<h1><br><hr><p>
-          HELLO I AM THE CODERANK I MAKE THIS TUTORIAL FOR MY SUBSCRIBERS AND OUR FRIENDS.</p>
-          <br><a href="http://localhost:3000/resetpwd?${url}=${verifyCode}">CLICK ME TO ACTIVATE YOUR ACCOUNT</a>`
+		subject: toSubject,
+		html: toHtml
 	};
 	transporter.sendMail(mailOption, (error, info) => {
 		if (error) {
@@ -31,136 +79,151 @@ function sendMailer(toEmail, url, verifyCode) {
 	});
 }
 
+router.get("/hello", (req, res) => {
+	res.send({ express: "Hello!!!!!!!" });
+});
+
 // login route
-router.route("/login").post((req, res) => {
-	let email = req.body.email;
-	let pwd = req.body.password;
-	let active = "1";
+router.post("/login", async (req, res) => {
+	let data = req.body;
 
 	client
 		.query(
 			q.Paginate(
-				q.Match(q.Index("findUserByEmailAndPassAndActive"), email, pwd, active)
+				q.Match(
+					q.Index("findUserByEmailAndPassAndActive"),
+					data.email,
+					data.password,
+					"1"
+				)
 			)
 		)
-		.then(ret => {
-			res.send(ret.data[0].id);
+		.then(result => {
+			if (result.data.length) {
+				res.send({ status: 1, data: { email: data.email } });
+			} else {
+				res.send({
+					status: 0,
+					message: "Email or password is incorrect"
+				});
+			}
 		})
 		.catch(err => {
-			res.send("DB error");
-			console.log(err, "DB fail!");
+			res.send({ status: 0, message: "Database cannot be connected!" });
 		});
 });
 
 // register route
-router.route("/register").post((req, res) => {
-	const transporter = nodemailer.createTransport({
-		service: "gmail",
-		auth: {
-			user: "yangtingclever@gmail.com",
-			pass: "dkrsusuvkrdhdksu529"
-		}
-	});
-	const verify = Math.floor(Math.random() * 10000000 + 1);
-	const active = "0";
-	const mailOption = {
-		from: "yangtingclever@gmail.com",
-		to: `${req.body.email}`,
-		subject: "Account Verification",
-		html: `<h1>Hello Friend Please Click on this link<h1><br><hr>
-          <p> HELLO I AM THE CODERANK I MAKE THIS TUTORIAL FOR MY SUBSCRIBERS AND OUR FRIENDS.</p>
-          <br><a href="http://localhost:3000/verification?code=${verify}">CLICK ME TO ACTIVATE YOUR ACCOUNT</a>`
-	};
+router.post("/register", async (req, res) => {
+	let data = req.body;
+	const code = Math.floor(Math.random() * 99999999999 + 1);
 	client
-		.query(
-			q.Create(q.Collection("User"), {
-				data: {
-					email: req.body.email,
-					password: req.body.password,
-					officalName: req.body.officalName,
-					city: req.body.city,
-					vatNumber: req.body.vatNumber,
-					atecoCode: req.body.atecoCode,
-					pec: req.body.pec,
-					active: active,
-					verify: verify
-				}
-			})
-		)
-		.then(ret =>
-			transporter.sendMail(mailOption, (error, info) => {
-				if (error) {
-					console.log(error, "message fail!");
-				} else {
-					let userdata = {
-						email: `${req.body.email}`,
-						id: ret.id
-					};
-					res.cookie("UserInfo", userdata);
-					res.send(ret.ref.id);
-				}
-			})
-		)
-		.catch(err => {
-			res.send("DB error");
-			console.log(err, "DB fail!");
+		.query(q.Paginate(q.Match(q.Index("findUserByEmail"), data.email)))
+		.then(result => {
+			if (result.data.length) {
+				console.log("The email already exists");
+				res.send({ status: 0, message: "The email already exists" });
+			} else {
+				client
+					.query(
+						q.Create(q.Collection("User"), {
+							data: {
+								email: data.email,
+								password: data.password,
+								officalName: data.officalName,
+								city: data.city,
+								vatNumber: data.vatNumber,
+								atecoCode: data.atecoCode,
+								pec: data.pec,
+								active: "0",
+								verify: code
+							}
+						})
+					)
+					.then(result => {
+						sendMailer(data.email, Utils.EMAIL_VERIFY, code);
+						let userdata = {
+							email: `${data.email}`,
+							id: result.ref.id
+						};
+						res.cookie("userInfo", userdata);
+						res.send({ status: 1, data: userdata });
+					})
+					.catch(err => {
+						res.send({
+							status: 0,
+							message:
+								"An error occured while create your account"
+						});
+					});
+			}
 		});
 });
 
 // verifcation route
-router.route("/verification").get((req, res) => {
-	console.log(req.query.verify);
+router.get("/verify", (req, res) => {
 	client
-		.query(q.Get(q.Ref(q.Collection("user"), req.cookies.UserInfo.id)))
-		.then(ret => {
-			activateAccount(ret.data.verification);
+		.query(q.Get(q.Ref(q.Collection("user"), req.cookies.userInfo.id)))
+		.then(result => {
+			activateAccount(result.data.verify);
 		})
 		.catch(err => {
 			console.log("DB failed");
 		});
-	function activateAccount(verification) {
-		if (verification === req.query.verify) {
+	function activateAccount(verify) {
+		if (verify === req.query.code) {
 			client
 				.query(
-					q.Update(q.Ref(q.Collection("user"), req.cookies.UserInfo.id), {
-						data: { active: 1 }
-					})
+					q.Update(
+						q.Ref(q.Collection("user"), req.cookies.UserInfo.id),
+						{
+							data: { active: "1" }
+						}
+					)
 				)
-				.then(ret => console.log(ret));
-		} else {
-			res.send("verification failed");
+				.then(result => {
+					res.render("index");
+				});
 		}
 	}
 });
 
 // forgetpassword route
-router.route("/forgetpwd").post((req, res) => {
-	let active = "1";
+router.post("/forgotpwd", (req, res) => {
+	let data = req.body;
 	client
 		.query(
 			q.Paginate(
-				q.Match(q.Index("findUserByEmailAndActive"), req.body.email, active)
+				q.Match(q.Index("findUserByEmailAndActive"), data.email, "1")
 			)
 		)
-		.then(ret => {
-			res.send(ret.data[0].id);
-			sendMailer(req.body.email, "_id", ret.data[0].id);
+		.then(result => {
+			res.send({
+				status: 1,
+				message:
+					"We've sent an email to reset your password. Please check your email inbox."
+			});
+			sendMailer(data.email, Utils.FORGOT_PASSWORD, result.data[0].id);
 		})
 		.catch(err => {
-			res.send("failed");
+			res.send({ status: 0, message: "Database cannont be connected!" });
 		});
 });
 
-router.route("/resetpwd").post((req, res) => {
+//reset password
+router.post("/resetpwd", (req, res) => {
+	let data = req.body;
 	client
 		.query(
-			q.Update(q.Ref(q.Collection("User"), req.body.userId), {
-				data: { password: req.body.password }
+			q.Update(q.Ref(q.Collection("User"), data.userId), {
+				data: { password: data.password }
 			})
 		)
-		.then(ret => {
-			res.send(ret);
-			console.log(ret);
+		.then(result => {
+			res.send({ status: 1, message: "Password has been changed" });
+		})
+		.catch(err => {
+			res.send({ status: 0, message: "Database cannont be connected!" });
 		});
 });
 

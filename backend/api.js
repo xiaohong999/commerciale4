@@ -1,19 +1,20 @@
+require("dotenv").config();
 const express = require("express");
 const serverless = require("serverless-http");
 const app = express();
 
-// const userRouter = require("./routes/user");
+const bodyParser = require("body-parser");
 
-// express.Router().get("/login1", async (req, res) => {
-// 	console.log("login");
-// });
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const router = express.Router();
-router.get("/hello", (req, res) => {
-	res.send({ express: "Hello From Express" });
-});
+app.set("view engine", "ejs");
+app.engine("ejs", require("ejs").__express);
+app.set("index", "views");
 
-app.use("/.netlify/functions/api", router); // path must route to lambda
+const userRouter = require("./routes/user");
+
+app.use("/.netlify/functions/api/user", userRouter); // path must route to lambda
 
 module.exports = app;
 module.exports.handler = serverless(app);
