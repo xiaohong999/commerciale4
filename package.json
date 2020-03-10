@@ -8,6 +8,7 @@
 		"crypto": "^1.0.1",
 		"dotenv": "^8.2.0",
 		"ejs": "^3.0.1",
+		"encoding": "^0.1.12",
 		"express": "^4.17.1",
 		"faunadb": "^2.13.0",
 		"font-awesome": "^4.7.0",
@@ -28,7 +29,9 @@
 		"start:app": "react-scripts start",
 		"build": "run-p build:**",
 		"build:lambda": "netlify-lambda build backend",
-		"build:app": "react-scripts build"
+		"build:app": "react-scripts build",
+		"deploy:draft": "netlify deploy --dir=build --functions=functions",
+		"deploy:prod": "netlify deploy --dir=build --functions=functions --prod"
 	},
 	"eslintConfig": {
 		"extends": "react-app"
