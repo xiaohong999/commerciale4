@@ -1,13 +1,8 @@
-const FAUNADB_SECRET = "fnADml5jTcACAQWFc800HImszSFnl6MNc5QS_547";
-const SERVER_URL = "https://cocky-bassi-5eafed.netlify.com/";
-const NETLIFY_FUNCTIONS_URL = "/.netlify/functions/api";
-const NODEMAILER_ACCOUNT = "yangtingclever@gmail.com";
-const NODEMAILER_PASSWORD = "dkrsusuvkrdhdksu529";
-// const FAUNADB_SECRET = process.env.REACT_APP_FAUNADB_SECRET;
-// const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-// const NETLIFY_FUNCTIONS_URL = process.env.REACT_APP_NETLIFY_FUNCTIONS_URL;
-// const NODEMAILER_ACCOUNT = process.env.REACT_APP_NODEMAILER_ACCOUNT;
-// const NODEMAILER_PASSWORD = process.env.REACT_APP_NODEMAILER_PASSWORD;
+const FAUNADB_SECRET = process.env.REACT_APP_FAUNADB_SECRET;
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+const NETLIFY_FUNCTIONS_URL = process.env.REACT_APP_NETLIFY_FUNCTIONS_URL;
+const NODEMAILER_ACCOUNT = process.env.REACT_APP_NODEMAILER_ACCOUNT;
+const NODEMAILER_PASSWORD = process.env.REACT_APP_NODEMAILER_PASSWORD;
 
 const EMAIL_VERIFY = 1;
 const FORGOT_PASSWORD = 2;
