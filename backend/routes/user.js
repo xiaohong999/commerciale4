@@ -109,7 +109,7 @@ router.post("/login", async (req, res) => {
 			}
 		})
 		.catch(err => {
-			res.send({ status: 0, message: "Database cannot be connected!" });
+			res.send({ status: 0, message: Utils.FAUNADB_SECRET });
 		});
 });
 

@@ -17,7 +17,7 @@ import ForgotPasswordPage from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPassword";
 
 function App() {
-	console.log(process.env.REACT_APP_SERVER_URL);
+	console.log(process.env.REACT_APP_FAUNADB_SECRET);
 	let footerNeeded = false;
 	if (
 		window.location.pathname === "/login" ||
