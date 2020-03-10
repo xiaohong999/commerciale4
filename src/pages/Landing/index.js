@@ -4,6 +4,20 @@ import LoginForm from "../../components/LoginForm";
 import SimpleSearch from "../../components/SimpleSearch";
 
 export default class LandingPage extends Component {
+	componentDidMount() {
+		this.callApi()
+			.then(res => console.log(res.express))
+			.catch(err => console.log(err));
+	}
+	callApi = async () => {
+		const response = await fetch("/.netlify/functions/api/user/hello");
+		const body = await response.json();
+
+		if (response.status !== 200) throw Error(body.message);
+
+		return body;
+	};
+
 	render() {
 		const isLoggedIn = sessionStorage.getItem("userEmail");
 		return (
