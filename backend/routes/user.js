@@ -157,6 +157,12 @@ router.post("/register", async (req, res) => {
 						});
 					});
 			}
+		})
+		.catch(err => {
+			res.send({
+				status: 0,
+				message: "An error occured while create your account!"
+			});
 		});
 });
 
