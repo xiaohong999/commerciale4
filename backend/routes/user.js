@@ -7,77 +7,55 @@ const client = new faunadb.Client({
 	secret: Utils.FAUNADB_SECRET
 });
 
-const crypto = require("crypto");
-const algorithm = "aes-256-cbc";
-const key = crypto.randomBytes(32);
-const iv = crypto.randomBytes(16);
-function encrypt(text) {
-	console.log(text);
-	let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
-	let encrypted = cipher.update(text);
-	encrypted = Buffer.concat([encrypted, cipher.final()]);
-	return { iv: iv.toString("hex"), encryptedData: encrypted.toString("hex") };
-}
-function decrypt(text) {
-	console.log("sgs", text.iv);
-	let iv = Buffer.from(text.iv, "hex");
-	console.log(iv);
-	let encryptedText = Buffer.from(text.encryptedData, "hex");
-	console.log(encryptedText);
-	let decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
-	console.log(decipher);
-	let decrypted = decipher.update(encryptedText);
-	decrypted = JSON.parse(decrypt);
-	console.log(decrypted);
-	decrypted = Buffer.concat([decrypted, decipher.final()]);
-	console.log(decrypted);
-	return decrypted.toString();
-}
-router.get("/encrypt", (req, res) => {
-	console.log(req.query.code);
-	console.log(encrypt(req.query.code));
-	res.send(encrypt(req.query.code));
-});
-router.post("/decrypt", (req, res) => {
-	console.log(JSON.parse(req.body));
-	console.log(decrypt(JSON.parse(req.body)));
-	res.send(decrypt(JSON.parse(req.body)));
-});
-
-function sendMailer(toEmail, type, value) {
-	let toHtml = "";
-	let toSubject = "";
-	if (type === Utils.EMAIL_VERIFY) {
-		toSubject = Utils.VERIFY_EMAIL_SUBJECT; // verify code
-		toHtml = `${Utils.VERIFY_EMAIL_MESSAGE}
-          <br/><a href="${Utils.SERVER_URL}${Utils.NETLIFY_FUNCTIONS_URL}/user/verify?code=${value}"></a>`;
-	} else {
-		toSubject = Utils.RESET_PASSWORD_SUBJECT;
-		toHtml = `${Utils.RESET_PASSWORD_MESSAGE}
-          <br/><a href="${Utils.SERVER_URL}/reset-password?id=${value}"></a>`;
-	}
-
+function sendMailer(emailData, response, message) {
 	const transporter = nodemailer.createTransport({
-		service: "gmail",
+		host: "smtp.gmail.com",
+		port: 587,
+		secure: false,
 		auth: {
 			user: Utils.NODEMAILER_ACCOUNT,
 			pass: Utils.NODEMAILER_PASSWORD
 		}
 	});
+
 	const mailOption = {
 		from: Utils.NODEMAILER_ACCOUNT,
-		to: toEmail,
-		subject: toSubject,
-		html: toHtml
+		to: emailData.address,
+		subject: emailData.subject,
+		html: emailData.html
 	};
+
 	transporter.sendMail(mailOption, (error, info) => {
 		if (error) {
-			return false;
+			if (response) {
+				response.send({
+					status: 0,
+					message: "Email has not been sent due to an error"
+				});
+			}
 		} else {
-			return;
+			if (response) {
+				response.send({ status: 1, message: message });
+			}
 		}
 	});
 }
+
+router.post("/verify-pec", async (req, res) => {
+	let data = req.body;
+	// let html = `${Utils.VERIFY_EMAIL_MESSAGE}
+	//       <br/><br/><a href="${Utils.SERVER_URL}${Utils.NETLIFY_FUNCTIONS_URL}/user/get-verified?id=${data.id}" ${Utils.EMAIL_STYLE}>Verify your email</a>${Utils.MESSAGE_FOOTER}`;
+	sendMailer(
+		{
+			address: data.pec,
+			subject: Utils.VERIFY_EMAIL_SUBJECT,
+			html: Utils.VERIFY_EMAIL_MESSAGE + Utils.MESSAGE_FOOTER
+		},
+		null,
+		null
+	);
+	res.send({ status: 2, message: "Email has been sent" });
+});
 
 router.get("/hello", (req, res) => {
 	res.send({ express: "Hello!!!!!!!" });
@@ -109,14 +87,14 @@ router.post("/login", async (req, res) => {
 			}
 		})
 		.catch(err => {
-			res.send({ status: 0, message: Utils.FAUNADB_SECRET });
+			res.send({ status: 0, message: "Connection failed!" });
 		});
 });
 
 // register route
 router.post("/register", async (req, res) => {
 	let data = req.body;
-	const code = Math.floor(Math.random() * 99999999999 + 1);
+
 	client
 		.query(q.Paginate(q.Match(q.Index("findUserByEmail"), data.email)))
 		.then(result => {
@@ -135,19 +113,15 @@ router.post("/register", async (req, res) => {
 								vatNumber: data.vatNumber,
 								atecoCode: data.atecoCode,
 								pec: data.pec,
-								active: "0",
-								verify: code
+								active: "0"
 							}
 						})
 					)
 					.then(result => {
-						sendMailer(data.email, Utils.EMAIL_VERIFY, code);
-						let userdata = {
-							email: `${data.email}`,
+						res.send({
+							status: 1,
 							id: result.ref.id
-						};
-						res.cookie("userInfo", userdata);
-						res.send({ status: 1, data: userdata });
+						});
 					})
 					.catch(err => {
 						res.send({
@@ -161,37 +135,26 @@ router.post("/register", async (req, res) => {
 		.catch(err => {
 			res.send({
 				status: 0,
-				message: Utils.FAUNADB_SECRET
+				message: "Connection failed!"
 			});
 		});
 });
 
 // verifcation route
-router.get("/verify", (req, res) => {
+router.get("/get-verified", (req, res) => {
 	client
-		.query(q.Get(q.Ref(q.Collection("user"), req.cookies.userInfo.id)))
+		.query(
+			q.Update(q.Ref(q.Collection("User"), req.query.id), {
+				data: { active: "1" }
+			})
+		)
 		.then(result => {
-			activateAccount(result.data.verify);
+			// res.render("index");
+			res.send(Utils.VERIFY_SUCCESS_PAGE);
 		})
 		.catch(err => {
-			console.log("DB failed");
+			console.log("Database cann't be connected!");
 		});
-	function activateAccount(verify) {
-		if (verify === req.query.code) {
-			client
-				.query(
-					q.Update(
-						q.Ref(q.Collection("user"), req.cookies.UserInfo.id),
-						{
-							data: { active: "1" }
-						}
-					)
-				)
-				.then(result => {
-					res.render("index");
-				});
-		}
-	}
 });
 
 // forgetpassword route
@@ -204,15 +167,33 @@ router.post("/forgotpwd", (req, res) => {
 			)
 		)
 		.then(result => {
-			res.send({
-				status: 1,
-				message:
+			if (result.data.length) {
+				let html = `${Utils.RESET_PASSWORD_MESSAGE}
+          <br/><br/><a href="${Utils.SERVER_URL}/reset-password?id=${result.data[0].id}" ${Utils.EMAIL_STYLE}>Reset your password</a>${Utils.MESSAGE_FOOTER}`;
+				sendMailer(
+					{
+						address: data.email,
+						subject: Utils.RESET_PASSWORD_SUBJECT,
+						html: html
+					},
+					null,
 					"We've sent an email to reset your password. Please check your email inbox."
-			});
-			sendMailer(data.email, Utils.FORGOT_PASSWORD, result.data[0].id);
+				);
+				res.send({
+					status: 1,
+					message:
+						"We've sent an email to reset your password. Please check your email inbox."
+				});
+			} else {
+				res.send({
+					status: 0,
+					message:
+						"The email address doesn't exist.Please enter the email corretly."
+				});
+			}
 		})
 		.catch(err => {
-			res.send({ status: 0, message: "Database cannont be connected!" });
+			res.send({ status: 0, message: "Database cann't be connected!" });
 		});
 });
 
